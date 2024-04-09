@@ -2,6 +2,10 @@
     die('Forbidden path');
 }
 
+$messagesPerPage = 6;
+
+$page = isset($_GET['puge']) ? intval($_GET['puge']) : 1;
+
 if (isset($_REQUEST['action']) && $_REQUEST['action'] === 'add_post' && $GLOBALS['currentuser']) {
 
 
@@ -98,13 +102,31 @@ if (isset($_REQUEST['action']) && $_REQUEST['action'] === 'like_post' && $GLOBAL
     die(header('location: /' . FORUM_DIR . '/?page=topic&topic_id=' . $_REQUEST['topic_id']));
 }
 
+$result = $db->query("SELECT COUNT(*) as total FROM post WHERE topicid = '{$_REQUEST['topic_id']}'");
+$row = $result->fetch_assoc();
+$totalMessages = $row['total'];
+
+$totalPages = ceil($totalMessages / $messagesPerPage);
+
+$offset = ($page - 1) * $messagesPerPage;
+if ($offset < 0) {
+    $offset = 0;
+}
 
 $result = $db->query("SELECT * FROM post WHERE topicid ='{$_REQUEST['topic_id']}'");
-$postlist = [];
+$postlistfull = [];
 if ($result->num_rows > 0) {
 
     while ($row = $result->fetch_assoc()) {
 
+        $postlistfull[$row['id']] = $row;
+    }
+}
+
+$result = $db->query("SELECT * FROM post WHERE topicid = '{$_REQUEST['topic_id']}' LIMIT {$messagesPerPage} OFFSET {$offset}");
+$postlist = [];
+if ($result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
         $postlist[$row['id']] = $row;
     }
 }
@@ -135,7 +157,7 @@ $topic_name = $result->fetch_assoc();
     <tbody>
         <?php foreach ($postlist as $post): ?>
             <tr>
-                <td id=<?= $post['id'] ?>>
+                <td id=<?= $post['id']?> page=<?=$page?>>
                     <?= $userlist[$post['userid']]['name'] ?>     <?= $userlist[$post['userid']]['surname'] ?></a>
                     <span><?= date('d-m-Y H:i:s', $post['createdate']) ?></span>
                     <?php if (isset($GLOBALS['currentuser']['id'])): ?>
@@ -152,10 +174,10 @@ $topic_name = $result->fetch_assoc();
                 <td>
                     <?php if (isset($post['replyid'])): ?>
                         <div class="text-cut">
-                            <?= $userlist[$postlist[$post['replyid']]['userid']]['name'] ?>
-                            <?= $userlist[$postlist[$post['replyid']]['userid']]['surname'] ?>:
-                            <a href="#<?= $post['replyid'] ?>">
-                                <?= $postlist[$post['replyid']]['message'] ?>
+                            <?= $userlist[$postlistfull[$post['replyid']]['userid']]['name'] ?>
+                            <?= $userlist[$postlistfull[$post['replyid']]['userid']]['surname'] ?>:
+                            <a href="/<?= FORUM_DIR ?>/?page=topic&topic_id=<?= $_REQUEST['topic_id'] ?>#<?= $post['replyid'] ?>">
+                                <?= $postlistfull[$post['replyid']]['message'] ?>
                             </a>
                         </div>
                         <hr style="margin-bottom: 0;">
@@ -203,6 +225,25 @@ $topic_name = $result->fetch_assoc();
 
     </tbody>
 </table>
+
+<div class="pagination">
+    <?php if ($page > 1): ?>
+        <a href="/<?= FORUM_DIR ?>/?page=topic&topic_id=<?= $_REQUEST['topic_id'] ?>&puge=<?php echo ($page - 1) ?>">&laquo; </a>
+    <?php endif; ?>
+
+    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+        <?php if ($i === $page): ?>
+            <span class="current"><?php echo $i; ?></span>
+        <?php else: ?>
+            <a href="/<?= FORUM_DIR ?>/?page=topic&topic_id=<?= $_REQUEST['topic_id'] ?>&puge=<?php echo $i?>"><?php echo $i; ?></a>
+        <?php endif; ?>
+    <?php endfor; ?>
+
+    <?php if ($page < $totalPages): ?>
+        <a href="/<?= FORUM_DIR ?>/?page=topic&topic_id=<?= $_REQUEST['topic_id'] ?>&puge=<?php echo ($page + 1)?>"> &raquo;</a>
+    <?php endif; ?>
+</div>
+
 <?php if (isset($_SESSION['login'])): ?>
     <table class="reply_form">
         <thead>
