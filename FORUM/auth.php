@@ -4,7 +4,9 @@ if (!defined('SEC')) {
 }
 if (isset($_REQUEST['action']) == 'auth' && !isset($_SESSION['login'])) {
 
-    $result = $db->query("SELECT * FROM user WHERE login = '{$_REQUEST['login']}'");
+    $login = mysqli_real_escape_string($db, $_REQUEST['login']);
+    $password = mysqli_real_escape_string($db, $_REQUEST['password']);
+    $result = $db->query("SELECT * FROM user WHERE login = '" . $login . "'");
     $user = [];
     if ($result->num_rows > 0) {
 

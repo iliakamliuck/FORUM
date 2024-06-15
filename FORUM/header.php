@@ -20,10 +20,18 @@ if (isset($_REQUEST['message'])) {
         case 'reg_exists';
             $systemText = 'That login or e-mail already exists';
             break;
-        case 'like_exists';
-            $systemText = 'You already liked it';
-            break;
     }
+}
+
+
+if ($GLOBALS['currentuser']) {
+    $result = $db->query("SELECT * FROM notifications WHERE userid = '{$GLOBALS['currentuser']['id']}' AND isread = false");
+    $notificationlist = [];
+        if ($result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $notificationlist[] = $row;
+            }
+        }
 }
 ?>
 
@@ -76,11 +84,12 @@ if (isset($_REQUEST['message'])) {
         }
 
         .text-cut {
-            width: 700px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            max-width: 700px;
         }
+
 
         .like {
             text-align: left;
@@ -231,6 +240,38 @@ if (isset($_REQUEST['message'])) {
         hr {
             margin-bottom: 2%;
         }
+
+        .scale {
+    width: 200px;
+    height: 10px;
+    border: 1px solid #ccc;
+    background-color: #f2f2f2;
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.fill {
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+}
+
+.fill.negative {
+    background-color: #990000; 
+}
+
+.fill.positive {
+    background-color: #006600; 
+}
+
+.post-photo {
+    max-width: 400px;
+    height: auto;
+    margin-bottom: 10px;
+}
+
     </style>
 </head>
 
@@ -248,14 +289,39 @@ if (isset($_REQUEST['message'])) {
                     <a href="/<?= FORUM_DIR ?>/?page=auth">Authorization</a>
                     <a href="/<?= FORUM_DIR ?>/?page=reg">Registration</a>
                 <?php else: ?>
-                    <a href="/<?= FORUM_DIR ?>/?action=logout">Logout(
-                        <?= $_SESSION['login'] ?>)
-                    </a>
+                    <a href="/<?= FORUM_DIR ?>/?action=logout">Logout(<?= $_SESSION['login'] ?>)</a>
+                <?php endif ?>
+                <?php if ((isset($_SESSION['login'])) && $GLOBALS['currentuser']['roleid'] === '1'): ?>
+                    <a href="/<?= FORUM_DIR ?>/?page=mod">Moderation</a>
                 <?php endif ?>
                 |
                 <span>Time: <?= date('d-m-Y H:i', time()) ?></span>
-            </div>
-
+                |
+                <?php if (!empty($notifications)): ?>
+  <span class="badge"><?= count($notifications) ?></span>
+<?php endif; ?>
+<span class="icon" onclick="toggleNotifications()">🔔</span>
+<ul class="notifications-list" style="display: none;">
+  <?php if ($GLOBALS['currentuser']) foreach ($notificationlist as $notification):
+    $result = $db->query("SELECT * FROM post WHERE topicid = '{$notification['topicid']}'");
+    $postList = [];
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $postList[$row['id']] = $row;
+        }
+    } ?>
+    <li data-read="<?= $notification['isread'] ? 'true' : 'false' ?>">
+    <div style="display: flex; align-items: center;">
+      <span style="margin-right: 10px;"><?= $notification['datecreated'] ? date('d-m-Y H:i', $notification['datecreated']) : ''  ?></span>
+      <span class="text-cut" style="margin-right: 10px;"><a href="/<?= FORUM_DIR ?>/?page=topic&topic_id=<?=$notification['topicid']?>&page_num=<?=ceil(array_search($notification['postid'],array_column($postList, 'id'))/6)?>#<?= $notification['postid'] ?>"><?=$notification['message']?></a></span>
+      <form method="POST" action="/<?= FORUM_DIR ?>/?action=notif_read">
+      <input type="hidden" name="notif_id" value="<?= $notification['id'] ?>">
+      <button type="submit" class="mark-as-read">Mark as Read</button>
+    </form></div>
+   </li>
+  <?php endforeach; ?>
+</ul>
+            </div> 
             <hr>
 
             <?php if (isset($systemText)): ?>
