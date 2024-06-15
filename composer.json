@@ -1,7 +1,0 @@
-{
-    "require": {
-        "monolog/monolog": "1.0.*",
-        "risan/sentiment-analysis": "dev-master"
-    }
-    
-}
