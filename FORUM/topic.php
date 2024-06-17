@@ -327,7 +327,7 @@ $topic_name = $result->fetch_assoc();
         method="POST">
         <input type="hidden" name="post_id" value="<?= $post['id'] ?>">
         <button type="submit" style="border: none; background: none;">
-        <img src="<?= (isset($GLOBALS['currentuser']) && array_key_exists('id', $GLOBALS['currentuser'])) ? (in_array($post['id'], $likelist) ? 'uploads/heart2.jpg' : 'uploads/heart1.jpg') : 'heart1.jpg' ?>" alt="like" width="22" height="22">
+        <img src="<?= (isset($GLOBALS['currentuser']) && array_key_exists('id', $GLOBALS['currentuser'])) ? (in_array($post['id'], $likelist) ? 'uploads/heart2.jpg' : 'uploads/heart1.jpg') : 'uploads/heart1.jpg' ?>" alt="like" width="22" height="22">
         </button>
     </form>
 </div>
